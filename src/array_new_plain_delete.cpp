@@ -31,9 +31,7 @@ struct B : public A {
 
 int main() {
 	A* pA{ new A[3] };
-	B* pB{ new B[3] };
-
 	delete pA;
-	delete pB;
+	// delete[] pA;
 }
 
