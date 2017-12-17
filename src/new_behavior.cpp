@@ -78,16 +78,18 @@ struct D : public B1, public B2 {
 };
 
 // a class which has a member pointer to a class
-struct E : public D {
-	E() : pM_{new M()} {
-		cout << __FUNCTION__ << " called for (" << B1::id_ << "," << B2::id_ << ")" << endl;
+struct E {
+	E() : pD_{new D()}, pM_{new M()} {
+		cout << __FUNCTION__ << " called for (" << pD_->B1::id_ << "," << pD_->B2::id_ << ")" << endl;
 	}
 
 	~E() {
-		cout << __FUNCTION__ << " called for (" << B1::id_ << "," << B2::id_ << ")" << endl;
+		cout << __FUNCTION__ << " called for (" << pD_->B1::id_ << "," << pD_->B2::id_ << ")" << endl;
 		delete pM_;
+		delete pD_;
 	}
 
+	D* pD_;
 	M* pM_;
 };
 
