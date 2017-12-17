@@ -125,7 +125,7 @@ int main() {
 	// Case #4:
 	// This shows what will happen when an exception is thrown during construction
 	// M will throw an exception
-	// An object which is pointed to by a member pointer will not be destroyed properly
+	// An object which is pointed to by a member pointer will leak
 	cout << "Case #4: " << endl;
 	M::throw_ex = true;
 	try {
