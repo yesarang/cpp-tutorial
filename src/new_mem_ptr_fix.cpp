@@ -14,6 +14,7 @@ struct B1 {
 
 	~B1() {
 		cout << __FUNCTION__ << " called for " << id_ << endl;
+		cout.flush();
 	}
 
 	static int id;
@@ -34,6 +35,7 @@ struct B2 {
 
 	~B2() {
 		cout << __FUNCTION__ << " called for " << id_ << endl;
+		cout.flush();
 	}
 
 	static int id;
@@ -56,6 +58,7 @@ struct M {
 
 	~M() {
 		cout << __FUNCTION__ << " called for " << id_ << endl;
+		cout.flush();
 	}
 
 	static int id;
@@ -74,46 +77,60 @@ struct D : public B1, public B2 {
 
 	~D() {
 		cout << __FUNCTION__ << " called for (" << B1::id_ << "," << B2::id_ << ")" << endl;
+		cout.flush();
 	}
-};
-
-// a class which has a member pointer to a class
-struct E {
-	E() : pD_{new D()}, pM_{new M()} {
-		cout << __FUNCTION__ << " called for (" << pD_->B1::id_ << "," << pD_->B2::id_ << ")" << endl;
-	}
-
-	~E() {
-		cout << __FUNCTION__ << " called for (" << pD_->B1::id_ << "," << pD_->B2::id_ << ")" << endl;
-	}
-
-	unique_ptr<D> pD_;
-	unique_ptr<M> pM_;
 };
 
 struct E1 {
-	E1() : pD_{nullptr}, pM_{nullptr}, initialized_{false} {}
+	E1() : pD_{nullptr}, pM_{nullptr}, initialized_{false} {
+		cout << __FUNCTION__ << " called" << endl;
+		cout.flush();
+	}
 	
-	void Init() {
-		cout << __FUNCTION__ << " called for (" << pD_->B1::id_ << "," << pD_->B2::id_ << ")" << endl;
+	void initialize() {
+		cout << __FUNCTION__ << " called" << endl;
+		cout.flush();
+
 		try {
 			pD_ = new D();
 			pM_ = new M();
+			initialized_ = true;
+
+			cout << __FUNCTION__ << " called for (" << pD_->B1::id_ << "," << pD_->B2::id_ << ")" << endl;
+			cout.flush();
 		}
 		catch (...) {
+			cout << __FUNCTION__ << " caught the exception" << endl;
+			cout.flush();
+
 			delete pM_;
 			pM_ = nullptr;
 			delete pD_;
 			pD_ = nullptr;
-			rethrow;
+			throw;
 		}
-		initialized_ = true;
+	}
+
+	bool initialized() const {
+		return initialized_;
+	}
+
+	int getB1Id() const {
+		return pD_->B1::id_;
 	}
 
 	~E1() {
-		cout << __FUNCTION__ << " called for (" << pD_->B1::id_ << "," << pD_->B2::id_ << ")" << endl;
-		delete pM_;
-		delete pD_;
+		if (initialized_) {
+			cout << __FUNCTION__ << " called for (" << pD_->B1::id_ << "," << pD_->B2::id_ << ")" << endl;
+		}
+		else {
+			cout << __FUNCTION__ << " called" << endl;
+		}
+		cout.flush();
+		if (initialized_) {
+			delete pM_;
+			delete pD_;
+		}
 	}
 
 	D* pD_;
@@ -121,21 +138,132 @@ struct E1 {
 	bool initialized_;
 };
 
-int main() {
+struct E2 {
+	E2() : pD_{nullptr}, pM_{nullptr}, initialized_{false} {
+		cout << __FUNCTION__ << " called" << endl;
+		cout.flush();
+	}
+	
+	void initialize() {
+		cout << __FUNCTION__ << " called" << endl;
+		cout.flush();
+
+		unique_ptr<D> pD{ new D() };
+		unique_ptr<M> pM{ new M() };
+
+		pD_ = pD.release();
+		pM_ = pM.release();
+		initialized_ = true;
+
+		cout << __FUNCTION__ << " called for (" << pD_->B1::id_ << "," << pD_->B2::id_ << ")" << endl;
+		cout.flush();
+	}
+
+	bool initialized() const {
+		return initialized_;
+	}
+
+	int getB1Id() const {
+		return pD_->B1::id_;
+	}
+
+	~E2() {
+		if (initialized_) {
+			cout << __FUNCTION__ << " called for (" << pD_->B1::id_ << "," << pD_->B2::id_ << ")" << endl;
+		}
+		else {
+			cout << __FUNCTION__ << " called" << endl;
+		}
+		cout.flush();
+		if (initialized_) {
+			delete pM_;
+			delete pD_;
+		}
+	}
+
+	D* pD_;
+	M* pM_;
+	bool initialized_;
+};
+
+// a class which has a member pointer to a class
+struct E {
+	E() : pD_{new D()}, pM_{new M()} {
+		cout << __FUNCTION__ << " called for (" << pD_->B1::id_ << "," << pD_->B2::id_ << ")" << endl;
+		cout.flush();
+	}
+
+	~E() {
+		cout << __FUNCTION__ << " called for (" << pD_->B1::id_ << "," << pD_->B2::id_ << ")" << endl;
+		cout.flush();
+	}
+
+	int getB1Id() const {
+		return pD_->B1::id_;
+	}
+
+	unique_ptr<D> pD_;
+	unique_ptr<M> pM_;
+};
+
+void new_mem_ptr_naive_fix() {
+	// Naive fix for case #4:
+	cout << "Naive fix for case #4: " << endl;
+	E1* pE1 = new E1();
+	try {
+		pE1->initialize();
+	}
+	catch (Ex&) {
+		cout << "caught an exception for E1" << endl;
+	}
+	if (pE1->initialized()) {
+		cout << "id of pE1 = " << pE1->getB1Id() << endl;
+	}
+	delete pE1;
+	cout << endl;
+}
+
+void new_mem_ptr_naive_fix2() {
+	// Naive fix 2 for case #4:
+	cout << "Naive fix 2 for case #4: " << endl;
+	E2* pE2 = new E2();
+	try {
+		pE2->initialize();
+	}
+	catch (Ex&) {
+		cout << "caught an exception for E2" << endl;
+	}
+	if (pE2->initialized()) {
+		cout << "id of pE2 = " << pE2->getB1Id() << endl;
+	}
+	delete pE2;
+	cout << endl;
+}
+
+void new_mem_ptr_good_fix() {
 	// Final fix for case #4:
 	// This shows what will happen when an exception is thrown during construction
 	// M will throw an exception
 	// An object which is pointed to by a member pointer will be properly destroyed by unique_ptr
-	cout << "Case #4: " << endl;
+	cout << "Final fix for case #4: " << endl;
+	unique_ptr<E> pE{ make_unique<E>() };
+	cout << "id of pE = " << pE->getB1Id() << endl;
+}
+
+int main() {
 	M::throw_ex = true;
-	E* pE = nullptr;
+
+	new_mem_ptr_naive_fix();
+
+	new_mem_ptr_naive_fix2();
+
 	try {
-		pE = new E();
+		new_mem_ptr_good_fix();
 	}
-	catch (Ex&) {
-		cout << "caught exception" << endl;
+	catch (...) {
+	  	cout << "caught an exception for E" << endl;
 	}
+
 	M::throw_ex = false;
-	cout << endl;
 }
 
