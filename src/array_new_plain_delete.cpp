@@ -1,5 +1,4 @@
 #include <iostream>
-#include <memory>
 
 using namespace std;
 
@@ -18,16 +17,6 @@ struct A {
 };
 
 int A::id = 0;
-
-struct B : public A {
-	B() {
-		cout << __FUNCTION__ << " called for " << id_ << endl;
-	}
-
-	~B() {
-		cout << __FUNCTION__ << " called for " << id_ << endl;
-	}
-};
 
 int main() {
 	A* pA{ new A[3] };
