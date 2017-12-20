@@ -1,4 +1,5 @@
 #include <iostream>
+#include <memory>
 
 using namespace std;
 
@@ -40,12 +41,12 @@ int B::id = 0;
 bool B::throwEx = false;
 
 void alloc_A_and_B() {
-	A* pA{ new A[3] };
-	B* pB{ new B[3] };
+	unique_ptr<A[]> pA{ new A[3] };
+	unique_ptr<B[]> pB{ new B[3] };
 	// Following lines will not be executed as an exception will occur.
-	// Hence, pA memory will leak.
-	delete[] pA;
-	delete[] pB;
+	// While stack unwinding, pA's dtor will be called and what pA's dtor does is
+	// delete[] pA.
+	// In this way, pA's memory will not leak even in case of exception.
 }
 
 int main() {
