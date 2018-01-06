@@ -113,32 +113,39 @@ struct E {
 };
 
 void new_mem_ptr_good_fix() noexcept(false) {
-	// Final fix for case #4:
-	// This shows what will happen when an exception is thrown during construction
-	// M will throw an exception
-	// An object which is pointed to by a member pointer will be properly destroyed by unique_ptr
+	// Final fix for case #4 can't work with dtor exception because
+	// unique_ptr's dtor has noexcept(true) property, in which case
+	// noexcept specification is violated and in result, 
+	// terminate() will be called. Beware that pD_ is a unique_ptr and
+	// delete pD_ will be called in the process of destruction of E.
+	// C++ standard library assume that no dtor throws an exception.
 	cout << "Final fix for case #4: " << endl;
 	unique_ptr<E> pE{ make_unique<E>() };
 	cout << "id of pE = " << pE->getB1Id() << endl;
 }
 
-int main()
-try {
+void dtor_except_ex() {
+	B2 b2;
+}
+
+int main() {
+	B2::throw_ex_at_dtor = true;
+
+	try {
+		dtor_except_ex();
+	}
+	catch (...) {
+		cout << "caught an exception" << endl;
+	}
+
+	M::throw_ex = true;
 	B2::throw_ex_at_dtor = true;
 
 	try {
 		new_mem_ptr_good_fix();
 	}
 	catch (...) {
-	  	cout << "caught an exception for E" << endl;
+	  	cout << "caught an exception" << endl;
 	}
-
-	M::throw_ex = true;
-	B2::throw_ex_at_dtor = true;
-
-	new_mem_ptr_good_fix();
-}
-catch (...) {
-  	cout << "caught an exception for E" << endl;
 }
 
